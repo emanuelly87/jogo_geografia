@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>DemograFuga - A Jornada do Futuro</title>
+<style>
+  body { margin: 0; overflow: hidden; font-family: sans-serif; }
+  canvas { display: block; background: #87ceeb; }
+  #questionBox {
+    position: fixed;
+    top: 20px; left: 50%; transform: translateX(-50%);
+    width: 60%; background: #fff; padding: 15px;
+    border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    display: none; z-index: 10;
+  }
+  #questionBox p { margin: 0 0 10px; }
+  #questionBox button { margin: 5px; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="900" height="500"></canvas>
+<div id="questionBox">
+  <p id="questionText"></p>
+  <button id="option0"></button>
+  <button id="option1"></button>
+  <button id="option2"></button>
+  <button id="option3"></button>
+</div>
+<script>
+// Estrutura base: personagem, fases longas, obstáculos, perguntas aleatórias na periferia
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const gravity = 0.6;
+const groundLevel = 420;
+let player = { x: 50, y: groundLevel, w: 30, h: 40, vy: 0, jumping: false };
+let keys = {};
+
+// Fases
+let currentPhase = 0;
+const allPeriferiaQuestions = [
+  { q: "O que é êxodo rural?", options: ["Saída da cidade", "Saída do campo para cidade"], a: 1 },
+  { q: "Qual problema comum nas periferias?", options: ["Saneamento básico", "Transporte aéreo"], a: 0 },
+  { q: "O que pode melhorar a periferia?", options: ["Investimento público", "Privatização de rios"], a: 0 }
+];
+let periferiaUsed = [];
+
+const phases = [
+  {
+    name: "Zona Rural",
+    color: "#a4d46f",
+    obstacles: [{x: 300, w: 40}, {x: 600, w: 60}],
+    questions: [
+      { x: 700, q: "O que é crescimento vegetativo?", options: ["Natalidade - Mortalidade", "Migração"] , a: 0, answered: false },
+    ]
+  },
+  {
+    name: "Periferia",
+    color: "#cccccc",
+    obstacles: [{x: 250, w: 40}, {x: 500, w: 50}, {x: 750, w: 30}],
+    questions: [] // preenchida dinamicamente
+  },
+  {
+    name: "Escola Pública",
+    color: "#fbeec1",
+    obstacles: [{x: 350, w: 50}, {x: 650, w: 50}],
+    questions: [
+      { x: 700, q: "Qual direito é garantido na escola pública?", options: ["Educação gratuita", "Educação paga"], a: 0, answered: false },
+    ]
+  }
+];
+
+const questionBox = document.getElementById("questionBox");
+const questionText = document.getElementById("questionText");
+const optionButtons = [
+  document.getElementById("option0"),
+  document.getElementById("option1"),
+  document.getElementById("option2"),
+  document.getElementById("option3")
+];
+
+let currentQuestion = null;
+
+function loadRandomPeriferiaQuestion() {
+  const unused = allPeriferiaQuestions.filter((_, i) => !periferiaUsed.includes(i));
+  if (unused.length === 0) periferiaUsed = [];
+  const index = Math.floor(Math.random() * allPeriferiaQuestions.length);
+  periferiaUsed.push(index);
+  return { x: 600, ...allPeriferiaQuestions[index], answered: false };
+}
+
+function showQuestion(qObj) {
+  currentQuestion = qObj;
+  questionText.textContent = qObj.q;
+  optionButtons.forEach((btn, i) => {
+    btn.textContent = qObj.options[i] || "";
+    btn.style.display = qObj.options[i] ? "inline-block" : "none";
+    btn.onclick = () => checkAnswer(i);
+  });
+  questionBox.style.display = "block";
+}
+
+function checkAnswer(i) {
+  questionBox.style.display = "none";
+  if (i === currentQuestion.a) {
+    currentQuestion.answered = true;
+    if (currentPhase === 1) {
+      // Se respondeu na periferia, avança
+      currentPhase = 2;
+      player.x = 50;
+    }
+  } else {
+    // Volta pra periferia se errou
+    currentPhase = 1;
+    phases[1].questions = [loadRandomPeriferiaQuestion()];
+    player.x = 50;
+  }
+  currentQuestion = null;
+}
+
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+function update() {
+  if (keys["ArrowRight"]) player.x += 5;
+  if (keys["ArrowLeft"]) player.x -= 5;
+  if ((keys[" "] || keys["ArrowUp"]) && !player.jumping) {
+    player.vy = -12;
+    player.jumping = true;
+  }
+
+  player.vy += gravity;
+  player.y += player.vy;
+
+  if (player.y >= groundLevel) {
+    player.y = groundLevel;
+    player.vy = 0;
+    player.jumping = false;
+  }
+
+  // Verifica colisão com obstáculos (buracos)
+  const p = phases[currentPhase];
+  for (let obs of p.obstacles) {
+    if (player.x + player.w > obs.x && player.x < obs.x + obs.w && player.y + player.h >= groundLevel) {
+      player.y = groundLevel + 40; // Caiu
+      currentPhase = 1; // Volta pra periferia
+      phases[1].questions = [loadRandomPeriferiaQuestion()];
+      player.x = 50;
+    }
+  }
+
+  // Verifica coleta de perguntas
+  for (let q of p.questions) {
+    if (!q.answered && player.x + player.w > q.x && player.x < q.x + 30) {
+      showQuestion(q);
+    }
+  }
+
+  if (player.x > canvas.width - 50 && !currentQuestion) {
+    currentPhase = Math.min(currentPhase + 1, phases.length - 1);
+    player.x = 50;
+  }
+}
+
+function draw() {
+  const p = phases[currentPhase];
+  ctx.fillStyle = p.color;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Chão
+  ctx.fillStyle = "#654321";
+  ctx.fillRect(0, groundLevel + player.h, canvas.width, 100);
+
+  // Obstáculos
+  ctx.fillStyle = "#000";
+  for (let obs of p.obstacles) {
+    ctx.fillRect(obs.x, groundLevel + player.h, obs.w, 50);
+  }
+
+  // Garrafinhas / perguntas
+  ctx.fillStyle = "#0077ff";
+  for (let q of p.questions) {
+    if (!q.answered) ctx.fillRect(q.x, groundLevel - 30, 20, 30);
+  }
+
+  // Jogador
+  ctx.fillStyle = "#333";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  ctx.fillStyle = "#000";
+  ctx.fillText("Fase: " + p.name, 10, 20);
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// Inicializa pergunta da periferia
+phases[1].questions = [loadRandomPeriferiaQuestion()];
+loop();
+</script>
+</body>
+</html>
