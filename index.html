@@ -34,7 +34,6 @@ const groundLevel = 420;
 let player = { x: 50, y: groundLevel, w: 30, h: 40, vy: 0, jumping: false };
 let keys = {};
 
-// Imagens
 const images = {
   "zona_rural": new Image(),
   "periferia": new Image(),
@@ -42,7 +41,8 @@ const images = {
   "nilo": new Image(),
   "garrafinha": new Image(),
   "esgoto": new Image(),
-  "carteira": new Image()
+  "carteira": new Image(),
+  "favela": new Image()
 };
 images["zona_rural"].src = "zona_rural.gif";
 images["periferia"].src = "periferia.gif";
@@ -51,8 +51,8 @@ images["nilo"].src = "nilo.gif";
 images["garrafinha"].src = "garrafinha.gif";
 images["esgoto"].src = "esgoto.gif";
 images["carteira"].src = "carteira.gif";
+images["favela"].src = "favela.gif";
 
-// Fases
 let currentPhase = 0;
 let showFinal = false;
 let fireworks = [];
@@ -86,6 +86,14 @@ const phases = [
     questions: [
       { x: 700, q: "Qual direito é garantido na escola pública?", options: ["Educação gratuita", "Educação paga"], a: 0, answered: false },
     ]
+  },
+  {
+    name: "Favela",
+    bg: images["favela"],
+    obstacles: [{x: 200, w: 50}, {x: 500, w: 60}],
+    questions: [
+      { x: 600, q: "Qual é um desafio enfrentado em muitas favelas?", options: ["Falta de infraestrutura", "Alta cobertura médica"], a: 0, answered: false }
+    ]
   }
 ];
 
@@ -101,11 +109,18 @@ const optionButtons = [
 let currentQuestion = null;
 
 function loadRandomPeriferiaQuestion() {
-  const unused = allPeriferiaQuestions.filter((_, i) => !periferiaUsed.includes(i));
-  if (unused.length === 0) periferiaUsed = [];
-  const index = Math.floor(Math.random() * allPeriferiaQuestions.length);
-  periferiaUsed.push(index);
-  return { x: 600, ...allPeriferiaQuestions[index], answered: false };
+  let unused = allPeriferiaQuestions
+    .map((q, i) => ({ ...q, index: i }))
+    .filter(q => !periferiaUsed.includes(q.index));
+
+  if (unused.length === 0) {
+    periferiaUsed = [];
+    unused = allPeriferiaQuestions.map((q, i) => ({ ...q, index: i }));
+  }
+
+  const random = unused[Math.floor(Math.random() * unused.length)];
+  periferiaUsed.push(random.index);
+  return { x: 600, ...random, answered: false };
 }
 
 function showQuestion(qObj) {
@@ -128,10 +143,13 @@ function checkAnswer(i) {
       player.x = 50;
     } else if (currentPhase === 2 && phases[2].questions.every(q => q.answered)) {
       showFinal = true;
+    } else if (currentPhase === 3) {
+      currentPhase = 1;
+      phases[1].questions = [loadRandomPeriferiaQuestion()];
+      player.x = 50;
     }
   } else {
-    currentPhase = 1;
-    phases[1].questions = [loadRandomPeriferiaQuestion()];
+    currentPhase = 3; // Vai para Favela se errar
     player.x = 50;
   }
   currentQuestion = null;
@@ -148,6 +166,13 @@ function createFirework() {
     color: `hsl(${Math.random() * 360}, 100%, 50%)`,
     life: 60
   };
+}
+
+function isColliding(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < groundLevel + 40 &&
+         a.y + a.h > groundLevel;
 }
 
 function update() {
@@ -176,7 +201,7 @@ function update() {
 
   const p = phases[currentPhase];
   for (let obs of p.obstacles) {
-    if (player.x + player.w > obs.x && player.x < obs.x + obs.w && player.y + player.h >= groundLevel) {
+    if (isColliding(player, { x: obs.x, y: groundLevel, w: obs.w, h: 40 })) {
       player.y = groundLevel + 40;
       currentPhase = 1;
       phases[1].questions = [loadRandomPeriferiaQuestion()];
@@ -190,8 +215,11 @@ function update() {
     }
   }
 
-  if (player.x > canvas.width - 50 && !currentQuestion && currentPhase < phases.length - 1) {
-    currentPhase++;
+  if (player.x > canvas.width - 50 && !currentQuestion && currentPhase === 0) {
+    currentPhase = 1;
+    player.x = 50;
+  } else if (player.x > canvas.width - 50 && !currentQuestion && currentPhase === 1) {
+    currentPhase = 2;
     player.x = 50;
   }
 }
