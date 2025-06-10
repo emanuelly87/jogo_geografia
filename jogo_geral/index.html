@@ -31,18 +31,18 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const gravity = 0.6;
 const groundLevel = 420;
-let player = { x: 50, y: groundLevel, w: 30, h: 40, vy: 0, jumping: false };
+let player = { x: 50, y: groundLevel, w: 50, h: 70, vy: 0, jumping: false };
 let keys = {};
 
 const images = {
-  "zona_rural": new Image(zona_rural.jpeg),
-  "periferia": new Image(periferia.jpeg),
-  "escola_publica": new Image(escola.jpg),
-  "nilo": new Image(nilo.gif),
-  "garrafinha": new Image(garrafinha.gif),
-  "esgoto": new Image(esgoto.jpeg),
-  "carteira": new Image(carteira_de_trabalho.jpg),
-  "favela": new Image(favela.jpg)
+  "zona_rural": new Image(),
+  "periferia": new Image(),
+  "escola_publica": new Image(),
+  "nilo": new Image(),
+  "garrafinha": new Image(),
+  "esgoto": new Image(),
+  "carteira": new Image(),
+  "favela": new Image()
 };
 images["zona_rural"].src = "zona_rural.jpeg";
 images["periferia"].src = "periferia.jpeg";
@@ -149,7 +149,7 @@ function checkAnswer(i) {
       player.x = 50;
     }
   } else {
-    currentPhase = 3; // Vai para Favela se errar
+    currentPhase = 3;
     player.x = 50;
   }
   currentQuestion = null;
@@ -171,8 +171,8 @@ function createFirework() {
 function isColliding(a, b) {
   return a.x < b.x + b.w &&
          a.x + a.w > b.x &&
-         a.y < groundLevel + 40 &&
-         a.y + a.h > groundLevel;
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y;
 }
 
 function update() {
@@ -201,8 +201,8 @@ function update() {
 
   const p = phases[currentPhase];
   for (let obs of p.obstacles) {
-    if (isColliding(player, { x: obs.x, y: groundLevel, w: obs.w, h: 40 })) {
-      player.y = groundLevel + 40;
+    if (isColliding(player, { x: obs.x, y: groundLevel + 20, w: obs.w, h: 50 })) {
+      player.y = groundLevel;
       currentPhase = 1;
       phases[1].questions = [loadRandomPeriferiaQuestion()];
       player.x = 50;
@@ -248,11 +248,11 @@ function draw() {
   ctx.fillRect(0, groundLevel + player.h, canvas.width, 100);
 
   for (let obs of p.obstacles) {
-    ctx.drawImage(images["esgoto"], obs.x, groundLevel + player.h, obs.w, 50);
+    ctx.drawImage(images["esgoto"], obs.x, groundLevel + 20, obs.w, 50);
   }
 
   for (let q of p.questions) {
-    if (!q.answered) ctx.drawImage(images["garrafinha"], q.x, groundLevel - 30, 20, 30);
+    if (!q.answered) ctx.drawImage(images["garrafinha"], q.x, groundLevel - 80, 30, 45);
   }
 
   ctx.drawImage(images["nilo"], player.x, player.y, player.w, player.h);
