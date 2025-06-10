@@ -35,23 +35,23 @@ let player = { x: 50, y: groundLevel, w: 30, h: 40, vy: 0, jumping: false };
 let keys = {};
 
 const images = {
-  "zona_rural": new Image(),
-  "periferia": new Image(),
-  "escola_publica": new Image(),
-  "nilo": new Image(),
-  "garrafinha": new Image(),
-  "esgoto": new Image(),
-  "carteira": new Image(),
-  "favela": new Image()
+  "zona_rural": new Image(zona_rural.jpeg),
+  "periferia": new Image(periferia.jpeg),
+  "escola_publica": new Image(escola.jpg),
+  "nilo": new Image(nilo.gif),
+  "garrafinha": new Image(garrafinha.gif),
+  "esgoto": new Image(esgoto.jpeg),
+  "carteira": new Image(carteira_de_trabalho.jpg),
+  "favela": new Image(favela.jpg)
 };
-images["zona_rural"].src = "zona_rural.gif";
-images["periferia"].src = "periferia.gif";
-images["escola_publica"].src = "escola_publica.gif";
+images["zona_rural"].src = "zona_rural.jpeg";
+images["periferia"].src = "periferia.jpeg";
+images["escola_publica"].src = "escola.jpg";
 images["nilo"].src = "nilo.gif";
 images["garrafinha"].src = "garrafinha.gif";
-images["esgoto"].src = "esgoto.gif";
-images["carteira"].src = "carteira.gif";
-images["favela"].src = "favela.gif";
+images["esgoto"].src = "esgoto.jpeg";
+images["carteira"].src = "carteira_de_trabalho.jpg";
+images["favela"].src = "favela.jpg";
 
 let currentPhase = 0;
 let showFinal = false;
