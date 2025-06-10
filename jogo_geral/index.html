@@ -43,12 +43,14 @@
 </div>
 
 <script>
-// Inicialização básica
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const gravity = 0.6;
 const groundLevel = 420;
-let player = { x: 50, y: groundLevel, w: 50, h: 70, vy: 0, jumping: false };
+
+// NILO MAIOR
+let player = { x: 50, y: groundLevel, w: 60, h: 90, vy: 0, jumping: false };
+
 let keys = {};
 let currentPhase = 0;
 let showFinal = false;
@@ -276,12 +278,14 @@ function draw() {
   ctx.fillStyle = "#654321";
   ctx.fillRect(0, groundLevel + player.h, canvas.width, 100);
 
+  // ESGOTOS MAIS ESTREITOS
   for (let obs of p.obstacles) {
-    ctx.drawImage(images["esgoto"], obs.x, groundLevel + player.h, obs.w, 50);
+    ctx.drawImage(images["esgoto"], obs.x, groundLevel + player.h, 40, 50);
   }
 
+  // GARRAFINHAS MAIORES
   for (let q of p.questions) {
-    if (!q.answered) ctx.drawImage(images["garrafinha"], q.x, groundLevel - 60, 25, 40);
+    if (!q.answered) ctx.drawImage(images["garrafinha"], q.x, groundLevel - 70, 35, 50);
   }
 
   ctx.drawImage(images["nilo"], player.x, player.y, player.w, player.h);
