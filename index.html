@@ -1,3 +1,4 @@
+<!-- CÓDIGO HTML E JAVASCRIPT COM ESGOTOS REMOVIDOS -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -48,7 +49,6 @@ const ctx = canvas.getContext("2d");
 const gravity = 0.6;
 const groundLevel = 420;
 
-// NILO MAIOR
 let player = { x: 50, y: groundLevel, w: 60, h: 90, vy: 0, jumping: false };
 
 let keys = {};
@@ -62,7 +62,6 @@ const images = {
   "escola_publica": new Image(),
   "nilo": new Image(),
   "garrafinha": new Image(),
-  "esgoto": new Image(),
   "carteira": new Image(),
   "favela": new Image()
 };
@@ -72,7 +71,6 @@ images["periferia"].src = "periferia.jpeg";
 images["escola_publica"].src = "escola.jpg";
 images["nilo"].src = "nilo.png";
 images["garrafinha"].src = "garrafinha.png";
-images["esgoto"].src = "esgoto.png";
 images["carteira"].src = "carteira_de_trabalho.png";
 images["favela"].src = "favela.jpg";
 
@@ -100,7 +98,7 @@ const phases = [
   {
     name: "Zona Rural",
     bg: images["zona_rural"],
-    obstacles: [{x: 300, w: 60}, {x: 600, w: 80}],
+    obstacles: [],
     questions: [
       { x: 700, q: "O que é crescimento vegetativo?", options: ["Natalidade - Mortalidade", "Migração"] , a: 0, answered: false },
     ]
@@ -108,19 +106,19 @@ const phases = [
   {
     name: "Periferia",
     bg: images["periferia"],
-    obstacles: [{x: 250, w: 60}, {x: 500, w: 70}, {x: 750, w: 50}],
+    obstacles: [],
     questions: []
   },
   {
     name: "Escola Pública",
     bg: images["escola_publica"],
-    obstacles: [{x: 350, w: 70}, {x: 650, w: 70}],
+    obstacles: [],
     questions: escolaQuestions.map((q, i) => ({ x: 150 + i*60, ...q, answered: false }))
   },
   {
     name: "Favela",
     bg: images["favela"],
-    obstacles: [{x: 200, w: 70}, {x: 500, w: 70}],
+    obstacles: [],
     questions: [
       { x: 600, q: "Qual é um desafio enfrentado em muitas favelas?", options: ["Falta de infraestrutura", "Alta cobertura médica"], a: 0, answered: false }
     ]
@@ -203,11 +201,6 @@ function createFirework() {
   };
 }
 
-function isColliding(a, b) {
-  return a.x < b.x + b.w && a.x + a.w > b.x &&
-         a.y < groundLevel + 40 && a.y + a.h > groundLevel;
-}
-
 function update() {
   if (showFinal) {
     if (Math.random() < 0.2) fireworks.push(createFirework());
@@ -232,14 +225,6 @@ function update() {
   }
 
   const p = phases[currentPhase];
-  for (let obs of p.obstacles) {
-    if (isColliding(player, { x: obs.x, y: groundLevel, w: obs.w, h: 40 })) {
-      player.y = groundLevel + 40;
-      currentPhase = 1;
-      phases[1].questions = [loadRandomPeriferiaQuestion()];
-      player.x = 50;
-    }
-  }
 
   for (let q of p.questions) {
     if (!q.answered && player.x + player.w > q.x && player.x < q.x + 30) {
@@ -278,12 +263,6 @@ function draw() {
   ctx.fillStyle = "#654321";
   ctx.fillRect(0, groundLevel + player.h, canvas.width, 100);
 
-  // ESGOTOS MAIS ESTREITOS
-  for (let obs of p.obstacles) {
-    ctx.drawImage(images["esgoto"], obs.x, groundLevel + player.h, 40, 50);
-  }
-
-  // GARRAFINHAS MAIORES
   for (let q of p.questions) {
     if (!q.answered) ctx.drawImage(images["garrafinha"], q.x, groundLevel - 70, 35, 50);
   }
