@@ -1,63 +1,39 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>DemograFuga - Tela Inicial</title>
-<style>
-  body { margin: 0; font-family: sans-serif; background-color: #87ceeb; }
-  #startScreen {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: linear-gradient(to bottom, #87ceeb, #ffffff);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  #startScreen h1 {
-    font-size: 48px;
-    color: #333;
-    margin-bottom: 30px;
-  }
-  #startScreen button {
-    font-size: 24px;
-    padding: 15px 30px;
-    border: none;
-    border-radius: 10px;
-    background-color: #28a745;
-    color: white;
-    cursor: pointer;
-  }
-  #startScreen button:hover {
-    background-color: #218838;
-  }
-
-  canvas { display: none; background: #87ceeb; }
-  #questionBox {
-    position: fixed;
-    top: 20px; left: 50%; transform: translateX(-50%);
-    width: 60%; background: #fff; padding: 15px;
-    border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    display: none; z-index: 10;
-  }
-  #questionBox p { margin: 0 0 10px; }
-  #questionBox button { margin: 5px; }
-</style>
+  <meta charset="UTF-8">
+  <title>DemograFuga - A Jornada do Futuro</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    canvas { display: block; background: #87ceeb; }
+    #questionBox, #startScreen {
+      position: fixed;
+      top: 20px; left: 50%; transform: translateX(-50%);
+      width: 60%; background: #fff; padding: 15px;
+      border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+    #questionBox { display: none; }
+    #questionBox p { margin: 0 0 10px; }
+    #questionBox button { margin: 5px; }
+    #startScreen {
+      top: 30%; text-align: center;
+    }
+    #startScreen h1 { margin-bottom: 20px; }
+    #startScreen button {
+      padding: 10px 20px; font-size: 18px;
+      background-color: #4CAF50; color: white; border: none;
+      border-radius: 8px; cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-
-<!-- TELA INICIAL -->
 <div id="startScreen">
-  <h1>DemograFuga</h1>
+  <h1>DemograFuga: A Jornada do Futuro</h1>
   <button onclick="startGame()">Jogar</button>
 </div>
 
-<!-- CANVAS DO JOGO -->
-<canvas id="gameCanvas" width="900" height="500"></canvas>
-
-<!-- CAIXA DE PERGUNTAS -->
+<canvas id="gameCanvas" width="900" height="500" style="display:none;"></canvas>
 <div id="questionBox">
   <p id="questionText"></p>
   <button id="option0"></button>
@@ -67,255 +43,256 @@
 </div>
 
 <script>
+// Inicialização básica
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const gravity = 0.6;
+const groundLevel = 420;
+let player = { x: 50, y: groundLevel, w: 50, h: 70, vy: 0, jumping: false };
+let keys = {};
+let currentPhase = 0;
+let showFinal = false;
+let fireworks = [];
+
+const images = {
+  "zona_rural": new Image(),
+  "periferia": new Image(),
+  "escola_publica": new Image(),
+  "nilo": new Image(),
+  "garrafinha": new Image(),
+  "esgoto": new Image(),
+  "carteira": new Image(),
+  "favela": new Image()
+};
+
+images["zona_rural"].src = "zona_rural.jpeg";
+images["periferia"].src = "periferia.jpeg";
+images["escola_publica"].src = "escola.jpg";
+images["nilo"].src = "nilo.gif";
+images["garrafinha"].src = "garrafinha.gif";
+images["esgoto"].src = "esgoto.jpeg";
+images["carteira"].src = "carteira_de_trabalho.jpg";
+images["favela"].src = "favela.jpg";
+
+const allPeriferiaQuestions = [
+  { q: "O que é êxodo rural?", options: ["Saída da cidade", "Saída do campo para cidade"], a: 1 },
+  { q: "Qual problema comum nas periferias?", options: ["Saneamento básico", "Transporte aéreo"], a: 0 },
+  { q: "O que pode melhorar a periferia?", options: ["Investimento público", "Privatização de rios"], a: 0 }
+];
+let periferiaUsed = [];
+
+const escolaQuestions = [
+  { q: "O que é crescimento vegetativo?", options: ["Natalidade - Mortalidade", "Migração", "Imigração - Emigração", "Crescimento urbano"], a: 0 },
+  { q: "O que caracteriza a transição demográfica?", options: ["Queda de natalidade e mortalidade", "Aumento da imigração", "Êxodo rural", "Crescimento urbano"], a: 0 },
+  { q: "Uma população jovem apresenta:", options: ["Alta taxa de natalidade", "Alta taxa de mortalidade", "Baixo crescimento natural", "Alta migração"], a: 0 },
+  { q: "A urbanização no Brasil está associada a:", options: ["Êxodo rural", "Aumento de nascimentos", "Imigração", "Industrialização apenas"], a: 0 },
+  { q: "A expectativa de vida é influenciada por:", options: ["Saúde e saneamento", "Geografia", "Tecnologia agrícola", "Mineração"], a: 0 },
+  { q: "A migração pendular ocorre quando:", options: ["Vai e volta diariamente", "Imigração internacional", "Mudança de país", "Migração rural"], a: 0 },
+  { q: "O envelhecimento populacional gera:", options: ["Mais gastos com saúde", "Menos aposentadorias", "Mais escolas", "Menos hospitais"], a: 0 },
+  { q: "Crescimento vegetativo positivo ocorre quando:", options: ["Nasce mais do que morre", "Migra mais do que nasce", "Morre mais que nasce", "Não há variação"], a: 0 },
+  { q: "O bônus demográfico é:", options: ["Maior número de jovens produtivos", "Alta natalidade", "Alta mortalidade", "Baixa população ativa"], a: 0 },
+  { q: "Migração interna é:", options: ["Dentro do país", "Entre continentes", "Entre países", "Do exterior para o país"], a: 0 },
+];
+
+const phases = [
+  {
+    name: "Zona Rural",
+    bg: images["zona_rural"],
+    obstacles: [{x: 300, w: 60}, {x: 600, w: 80}],
+    questions: [
+      { x: 700, q: "O que é crescimento vegetativo?", options: ["Natalidade - Mortalidade", "Migração"] , a: 0, answered: false },
+    ]
+  },
+  {
+    name: "Periferia",
+    bg: images["periferia"],
+    obstacles: [{x: 250, w: 60}, {x: 500, w: 70}, {x: 750, w: 50}],
+    questions: []
+  },
+  {
+    name: "Escola Pública",
+    bg: images["escola_publica"],
+    obstacles: [{x: 350, w: 70}, {x: 650, w: 70}],
+    questions: escolaQuestions.map((q, i) => ({ x: 150 + i*60, ...q, answered: false }))
+  },
+  {
+    name: "Favela",
+    bg: images["favela"],
+    obstacles: [{x: 200, w: 70}, {x: 500, w: 70}],
+    questions: [
+      { x: 600, q: "Qual é um desafio enfrentado em muitas favelas?", options: ["Falta de infraestrutura", "Alta cobertura médica"], a: 0, answered: false }
+    ]
+  }
+];
+
+const questionBox = document.getElementById("questionBox");
+const questionText = document.getElementById("questionText");
+const optionButtons = [
+  document.getElementById("option0"),
+  document.getElementById("option1"),
+  document.getElementById("option2"),
+  document.getElementById("option3")
+];
+
+let currentQuestion = null;
+
 function startGame() {
   document.getElementById("startScreen").style.display = "none";
-  document.getElementById("gameCanvas").style.display = "block";
-  initGame();
-}
-
-// AQUI COMEÇA O JOGO
-function initGame() {
-  const canvas = document.getElementById("gameCanvas");
-  const ctx = canvas.getContext("2d");
-  const gravity = 0.6;
-  const groundLevel = 420;
-  let player = { x: 50, y: groundLevel, w: 50, h: 70, vy: 0, jumping: false };
-  let keys = {};
-
-  const images = {
-    "zona_rural": new Image(),
-    "periferia": new Image(),
-    "escola_publica": new Image(),
-    "nilo": new Image(),
-    "garrafinha": new Image(),
-    "esgoto": new Image(),
-    "carteira": new Image(),
-    "favela": new Image()
-  };
-  images["zona_rural"].src = "zona_rural.jpeg";
-  images["periferia"].src = "periferia.jpeg";
-  images["escola_publica"].src = "escola.jpg";
-  images["nilo"].src = "nilo.gif";
-  images["garrafinha"].src = "garrafinha.gif";
-  images["esgoto"].src = "esgoto.jpeg";
-  images["carteira"].src = "carteira_de_trabalho.jpg";
-  images["favela"].src = "favela.jpg";
-
-  let currentPhase = 0;
-  let showFinal = false;
-  let fireworks = [];
-
-  const allPeriferiaQuestions = [
-    { q: "O que é êxodo rural?", options: ["Saída da cidade", "Saída do campo para cidade"], a: 1 },
-    { q: "Qual problema comum nas periferias?", options: ["Saneamento básico", "Transporte aéreo"], a: 0 },
-    { q: "O que pode melhorar a periferia?", options: ["Investimento público", "Privatização de rios"], a: 0 }
-  ];
-  let periferiaUsed = [];
-
-  const phases = [
-    {
-      name: "Zona Rural",
-      bg: images["zona_rural"],
-      obstacles: [{x: 300, w: 40}, {x: 600, w: 60}],
-      questions: [
-        { x: 700, q: "O que é crescimento vegetativo?", options: ["Natalidade - Mortalidade", "Migração"] , a: 0, answered: false },
-      ]
-    },
-    {
-      name: "Periferia",
-      bg: images["periferia"],
-      obstacles: [{x: 250, w: 40}, {x: 500, w: 50}, {x: 750, w: 30}],
-      questions: []
-    },
-    {
-      name: "Escola Pública",
-      bg: images["escola_publica"],
-      obstacles: [{x: 350, w: 50}, {x: 650, w: 50}],
-      questions: [
-        { x: 700, q: "Qual direito é garantido na escola pública?", options: ["Educação gratuita", "Educação paga"], a: 0, answered: false },
-      ]
-    },
-    {
-      name: "Favela",
-      bg: images["favela"],
-      obstacles: [{x: 200, w: 50}, {x: 500, w: 60}],
-      questions: [
-        { x: 600, q: "Qual é um desafio enfrentado em muitas favelas?", options: ["Falta de infraestrutura", "Alta cobertura médica"], a: 0, answered: false }
-      ]
-    }
-  ];
-
-  const questionBox = document.getElementById("questionBox");
-  const questionText = document.getElementById("questionText");
-  const optionButtons = [
-    document.getElementById("option0"),
-    document.getElementById("option1"),
-    document.getElementById("option2"),
-    document.getElementById("option3")
-  ];
-
-  let currentQuestion = null;
-
-  function loadRandomPeriferiaQuestion() {
-    let unused = allPeriferiaQuestions
-      .map((q, i) => ({ ...q, index: i }))
-      .filter(q => !periferiaUsed.includes(q.index));
-
-    if (unused.length === 0) {
-      periferiaUsed = [];
-      unused = allPeriferiaQuestions.map((q, i) => ({ ...q, index: i }));
-    }
-
-    const random = unused[Math.floor(Math.random() * unused.length)];
-    periferiaUsed.push(random.index);
-    return { x: 600, ...random, answered: false };
-  }
-
-  function showQuestion(qObj) {
-    currentQuestion = qObj;
-    questionText.textContent = qObj.q;
-    optionButtons.forEach((btn, i) => {
-      btn.textContent = qObj.options[i] || "";
-      btn.style.display = qObj.options[i] ? "inline-block" : "none";
-      btn.onclick = () => checkAnswer(i);
-    });
-    questionBox.style.display = "block";
-  }
-
-  function checkAnswer(i) {
-    questionBox.style.display = "none";
-    if (i === currentQuestion.a) {
-      currentQuestion.answered = true;
-      if (currentPhase === 1) {
-        currentPhase = 2;
-        player.x = 50;
-      } else if (currentPhase === 2 && phases[2].questions.every(q => q.answered)) {
-        showFinal = true;
-      } else if (currentPhase === 3) {
-        currentPhase = 1;
-        phases[1].questions = [loadRandomPeriferiaQuestion()];
-        player.x = 50;
-      }
-    } else {
-      currentPhase = 3;
-      player.x = 50;
-    }
-    currentQuestion = null;
-  }
-
-  document.addEventListener("keydown", e => keys[e.key] = true);
-  document.addEventListener("keyup", e => keys[e.key] = false);
-
-  function createFirework() {
-    return {
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height / 2,
-      r: Math.random() * 5 + 2,
-      color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-      life: 60
-    };
-  }
-
-  function isColliding(a, b) {
-    return a.x < b.x + b.w &&
-           a.x + a.w > b.x &&
-           a.y < b.y + b.h &&
-           a.y + a.h > b.y;
-  }
-
-  function update() {
-    if (showFinal) {
-      if (Math.random() < 0.2) fireworks.push(createFirework());
-      fireworks.forEach(f => f.life--);
-      fireworks = fireworks.filter(f => f.life > 0);
-      return;
-    }
-
-    if (keys["ArrowRight"]) player.x += 5;
-    if (keys["ArrowLeft"]) player.x -= 5;
-    if ((keys[" "] || keys["ArrowUp"]) && !player.jumping) {
-      player.vy = -12;
-      player.jumping = true;
-    }
-
-    player.vy += gravity;
-    player.y += player.vy;
-
-    if (player.y >= groundLevel) {
-      player.y = groundLevel;
-      player.vy = 0;
-      player.jumping = false;
-    }
-
-    const p = phases[currentPhase];
-    for (let obs of p.obstacles) {
-      if (isColliding(player, { x: obs.x, y: groundLevel + 20, w: obs.w, h: 50 })) {
-        player.y = groundLevel;
-        currentPhase = 1;
-        phases[1].questions = [loadRandomPeriferiaQuestion()];
-        player.x = 50;
-      }
-    }
-
-    for (let q of p.questions) {
-      if (!q.answered && player.x + player.w > q.x && player.x < q.x + 30) {
-        showQuestion(q);
-      }
-    }
-
-    if (player.x > canvas.width - 50 && !currentQuestion && currentPhase === 0) {
-      currentPhase = 1;
-      player.x = 50;
-    } else if (player.x > canvas.width - 50 && !currentQuestion && currentPhase === 1) {
-      currentPhase = 2;
-      player.x = 50;
-    }
-  }
-
-  function draw() {
-    if (showFinal) {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(images["carteira"], canvas.width/2 - 50, canvas.height/2 - 50, 100, 100);
-      ctx.fillStyle = "white";
-      ctx.font = "24px sans-serif";
-      ctx.fillText("Parabéns! Você conquistou sua Carteira de Trabalho!", 120, 80);
-      fireworks.forEach(f => {
-        ctx.beginPath();
-        ctx.arc(f.x, f.y, f.r, 0, 2 * Math.PI);
-        ctx.fillStyle = f.color;
-        ctx.fill();
-      });
-      return;
-    }
-
-    const p = phases[currentPhase];
-    ctx.drawImage(p.bg, 0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = "#654321";
-    ctx.fillRect(0, groundLevel + player.h, canvas.width, 100);
-
-    for (let obs of p.obstacles) {
-      ctx.drawImage(images["esgoto"], obs.x, groundLevel + 20, obs.w, 50);
-    }
-
-    for (let q of p.questions) {
-      if (!q.answered) ctx.drawImage(images["garrafinha"], q.x, groundLevel - 80, 30, 45);
-    }
-
-    ctx.drawImage(images["nilo"], player.x, player.y, player.w, player.h);
-    ctx.fillStyle = "#000";
-    ctx.fillText("Fase: " + p.name, 10, 20);
-  }
-
-  function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-  }
-
+  canvas.style.display = "block";
   phases[1].questions = [loadRandomPeriferiaQuestion()];
   loop();
+}
+
+function loadRandomPeriferiaQuestion() {
+  let unused = allPeriferiaQuestions
+    .map((q, i) => ({ ...q, index: i }))
+    .filter(q => !periferiaUsed.includes(q.index));
+  if (unused.length === 0) {
+    periferiaUsed = [];
+    unused = allPeriferiaQuestions.map((q, i) => ({ ...q, index: i }));
+  }
+  const random = unused[Math.floor(Math.random() * unused.length)];
+  periferiaUsed.push(random.index);
+  return { x: 600, ...random, answered: false };
+}
+
+function showQuestion(qObj) {
+  currentQuestion = qObj;
+  questionText.textContent = qObj.q;
+  optionButtons.forEach((btn, i) => {
+    btn.textContent = qObj.options[i] || "";
+    btn.style.display = qObj.options[i] ? "inline-block" : "none";
+    btn.onclick = () => checkAnswer(i);
+  });
+  questionBox.style.display = "block";
+}
+
+function checkAnswer(i) {
+  questionBox.style.display = "none";
+  if (i === currentQuestion.a) {
+    currentQuestion.answered = true;
+    if (currentPhase === 1) {
+      currentPhase = 2;
+      player.x = 50;
+    } else if (currentPhase === 2 && phases[2].questions.every(q => q.answered)) {
+      showFinal = true;
+    } else if (currentPhase === 3) {
+      currentPhase = 1;
+      phases[1].questions = [loadRandomPeriferiaQuestion()];
+      player.x = 50;
+    }
+  } else {
+    currentPhase = 3;
+    player.x = 50;
+  }
+  currentQuestion = null;
+}
+
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+function createFirework() {
+  return {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height / 2,
+    r: Math.random() * 5 + 2,
+    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+    life: 60
+  };
+}
+
+function isColliding(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+         a.y < groundLevel + 40 && a.y + a.h > groundLevel;
+}
+
+function update() {
+  if (showFinal) {
+    if (Math.random() < 0.2) fireworks.push(createFirework());
+    fireworks.forEach(f => f.life--);
+    fireworks = fireworks.filter(f => f.life > 0);
+    return;
+  }
+
+  if (keys["ArrowRight"]) player.x += 5;
+  if (keys["ArrowLeft"]) player.x -= 5;
+  if ((keys[" "] || keys["ArrowUp"]) && !player.jumping) {
+    player.vy = -12;
+    player.jumping = true;
+  }
+
+  player.vy += gravity;
+  player.y += player.vy;
+  if (player.y >= groundLevel) {
+    player.y = groundLevel;
+    player.vy = 0;
+    player.jumping = false;
+  }
+
+  const p = phases[currentPhase];
+  for (let obs of p.obstacles) {
+    if (isColliding(player, { x: obs.x, y: groundLevel, w: obs.w, h: 40 })) {
+      player.y = groundLevel + 40;
+      currentPhase = 1;
+      phases[1].questions = [loadRandomPeriferiaQuestion()];
+      player.x = 50;
+    }
+  }
+
+  for (let q of p.questions) {
+    if (!q.answered && player.x + player.w > q.x && player.x < q.x + 30) {
+      showQuestion(q);
+    }
+  }
+
+  if (player.x > canvas.width - 50 && !currentQuestion && currentPhase === 0) {
+    currentPhase = 1;
+    player.x = 50;
+  } else if (player.x > canvas.width - 50 && !currentQuestion && currentPhase === 1) {
+    currentPhase = 2;
+    player.x = 50;
+  }
+}
+
+function draw() {
+  if (showFinal) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(images["carteira"], canvas.width/2 - 50, canvas.height/2 - 50, 100, 100);
+    ctx.fillStyle = "white";
+    ctx.font = "24px sans-serif";
+    ctx.fillText("Parabéns! Você conquistou sua Carteira de Trabalho!", 120, 80);
+    fireworks.forEach(f => {
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, 2 * Math.PI);
+      ctx.fillStyle = f.color;
+      ctx.fill();
+    });
+    return;
+  }
+
+  const p = phases[currentPhase];
+  ctx.drawImage(p.bg, 0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#654321";
+  ctx.fillRect(0, groundLevel + player.h, canvas.width, 100);
+
+  for (let obs of p.obstacles) {
+    ctx.drawImage(images["esgoto"], obs.x, groundLevel + player.h, obs.w, 50);
+  }
+
+  for (let q of p.questions) {
+    if (!q.answered) ctx.drawImage(images["garrafinha"], q.x, groundLevel - 60, 25, 40);
+  }
+
+  ctx.drawImage(images["nilo"], player.x, player.y, player.w, player.h);
+  ctx.fillStyle = "#000";
+  ctx.fillText("Fase: " + p.name, 10, 20);
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
 }
 </script>
 </body>
